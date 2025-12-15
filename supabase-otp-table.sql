@@ -27,6 +27,9 @@ $$ LANGUAGE plpgsql;
 -- Enable RLS (Row Level Security) - optional, adjust based on your needs
 ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policy if it exists, then create new one
+DROP POLICY IF EXISTS "Service role can manage OTP codes" ON otp_codes;
+
 -- Policy: Allow service role to do everything (for serverless functions)
 CREATE POLICY "Service role can manage OTP codes"
   ON otp_codes
