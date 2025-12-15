@@ -36,9 +36,11 @@ function AdminPanel() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginError('')
+    setLoading(true)
     
     if (!password.trim()) {
       setLoginError('Password is required')
+      setLoading(false)
       return
     }
 
@@ -53,10 +55,16 @@ function AdminPanel() {
         REQUEST_TIMEOUT
       )
 
-      const result = await response.json()
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        throw new Error('Invalid response from server')
+      }
 
       if (!response.ok) {
         setLoginError(result.error || 'Invalid password')
+        setLoading(false)
         return
       }
 
@@ -67,6 +75,8 @@ function AdminPanel() {
       setPassword('')
     } catch (error) {
       setLoginError(error.message || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 

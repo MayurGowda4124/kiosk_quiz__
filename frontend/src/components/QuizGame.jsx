@@ -101,6 +101,7 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
   const confettiIntervalRef = useRef(null)
   const timeoutRefs = useRef([])
   const isMountedRef = useRef(true)
+  const answerProcessedRef = useRef(false) // Track if answer was already processed
 
   useEffect(() => {
     isMountedRef.current = true
@@ -154,8 +155,11 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
   }, [userData, navigate, onGameEnd])
 
   const handleAnswer = useCallback(async (index, isCorrect, isTimeout = false) => {
-    if (selectedAnswer !== null || gameResult !== null) return
-
+    // Prevent double processing
+    if (selectedAnswer !== null || gameResult !== null || answerProcessedRef.current) return
+    
+    // Mark as processed immediately
+    answerProcessedRef.current = true
     setSelectedAnswer(index)
     setGameResult(isCorrect)
 
@@ -258,8 +262,8 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
         if (prev <= 1) {
           isTimerActive = false
           if (timerId) clearInterval(timerId)
-          // Timeout = incorrect answer (only if no answer selected)
-          if (selectedAnswer === null && gameResult === null && isMountedRef.current) {
+          // Timeout = incorrect answer (only if no answer selected and not already processed)
+          if (selectedAnswer === null && gameResult === null && !answerProcessedRef.current && isMountedRef.current) {
             setIsTimeUp(true)
             handleAnswer(null, false, true)
           }

@@ -24,6 +24,11 @@ CREATE INDEX IF NOT EXISTS idx_game_result ON game_sessions(game_result);
 -- Enable Row Level Security (RLS)
 ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist, then create new ones
+DROP POLICY IF EXISTS "Users can insert their own session" ON game_sessions;
+DROP POLICY IF EXISTS "Users can update their own session" ON game_sessions;
+DROP POLICY IF EXISTS "Allow reading all sessions" ON game_sessions;
+
 -- Policy: Allow authenticated users to insert their own session
 CREATE POLICY "Users can insert their own session"
   ON game_sessions
@@ -51,6 +56,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- Drop existing trigger if it exists, then create new one
+DROP TRIGGER IF EXISTS update_game_sessions_updated_at ON game_sessions;
 
 -- Trigger to automatically update updated_at
 CREATE TRIGGER update_game_sessions_updated_at

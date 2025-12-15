@@ -22,7 +22,10 @@ export async function sendOtpEmail(to, otp) {
           <h2 style="color: #1e40af;">Your Verification Code</h2>
           <p>Your OTP code is:</p>
           <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-            <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af; margin: 0;">${otp}</p>
+            <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af; margin: 0;">${otp.replace(/[<>&"']/g, (char) => {
+              const map = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#039;' }
+              return map[char]
+            })}</p>
           </div>
           <p style="color: #6b7280;">This code is valid for 5 minutes.</p>
           <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">If you didn't request this code, please ignore this email.</p>

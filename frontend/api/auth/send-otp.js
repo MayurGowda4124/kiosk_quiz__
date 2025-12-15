@@ -55,9 +55,12 @@ export default async function handler(req, res) {
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*']
   const origin = req.headers.origin
   
-  if (allowedOrigins.includes('*') || (origin && allowedOrigins.includes(origin))) {
+  // Don't set credentials with wildcard
+  if (allowedOrigins.includes('*')) {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  } else if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
-    res.setHeader('Access-Control-Allow-Origin', origin || '*')
+    res.setHeader('Access-Control-Allow-Origin', origin)
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')

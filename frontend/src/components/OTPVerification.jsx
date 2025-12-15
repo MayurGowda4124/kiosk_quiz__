@@ -113,15 +113,22 @@ function OTPVerification({ email, userData, onVerified }) {
         REQUEST_TIMEOUT
       )
 
-      const result = await response.json()
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        throw new Error(`Invalid response from server (Status: ${response.status})`)
+      }
 
       if (!response.ok) {
-        if (result.error.includes('expired')) {
+        // Use specific error codes instead of string matching
+        const errorMessage = result.error || 'Verification failed'
+        if (errorMessage.toLowerCase().includes('expired')) {
           setError('OTP expired. Please request a new one.')
-        } else if (result.error.includes('Invalid')) {
+        } else if (errorMessage.toLowerCase().includes('invalid')) {
           setError('Invalid OTP. Please try again.')
         } else {
-          setError(result.error || 'Verification failed')
+          setError(errorMessage)
         }
         setOtp(['', '', '', ''])
         if (inputRefs.current[0]) {
@@ -180,6 +187,18 @@ function OTPVerification({ email, userData, onVerified }) {
     }
   }
 
+  const handlePaste = (e) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text')
+    // Only allow 4-digit numbers
+    if (/^\d{4}$/.test(pastedData)) {
+      const digits = pastedData.split('')
+      setOtp(digits)
+      // Auto-verify if valid
+      verifyOTP(pastedData)
+    }
+  }
+
   return (
     <div className="w-full h-screen bg-white flex flex-col items-center justify-center p-6 relative">
       {/* Header */}
@@ -207,6 +226,7 @@ function OTPVerification({ email, userData, onVerified }) {
             value={digit}
             onChange={(e) => handleInputChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
+            onPaste={handlePaste}
             className="w-20 h-20 md:w-24 md:h-24 text-4xl md:text-5xl text-center border-4 border-gray-300 rounded-xl focus:border-upi-blue focus:outline-none font-bold disabled:opacity-50"
             disabled={isLoading || isVerified}
           />

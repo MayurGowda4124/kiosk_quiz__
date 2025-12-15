@@ -6,11 +6,16 @@ const OTP_EXPIRY_MINUTES = 5
 export async function setOTP(email, data) {
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString()
   
-  // Delete any existing OTPs for this email
-  await supabase
+  // Delete any existing OTPs for this email (with error handling)
+  const { error: deleteError } = await supabase
     .from('otp_codes')
     .delete()
     .eq('email', email.toLowerCase())
+  
+  if (deleteError) {
+    console.error('Error deleting existing OTP:', deleteError)
+    // Continue anyway - might be first OTP for this email
+  }
   
   // Insert new OTP
   const { error } = await supabase
