@@ -152,7 +152,7 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
     }
 
     checkIfPlayed()
-  }, [userData, navigate, onGameEnd])
+  }, [userData, navigate, onGameEnd, selectedCountry])
 
   const handleAnswer = useCallback(async (index, isCorrect, isTimeout = false) => {
     // Prevent double processing
@@ -225,13 +225,17 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
 
     // Save result to database
     try {
-      await supabase
+      const { error: saveError } = await supabase
         .from('game_sessions')
         .update({
           game_result: isCorrect ? 'win' : 'loss',
           answered_at: new Date().toISOString(),
         })
         .eq('email', userData.email.toLowerCase())
+      
+      if (saveError) {
+        console.error('Error saving game result:', saveError)
+      }
     } catch (error) {
       console.error('Error saving game result:', error)
     }

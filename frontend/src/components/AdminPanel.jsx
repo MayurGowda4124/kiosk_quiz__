@@ -94,11 +94,12 @@ function AdminPanel() {
 
       if (error) throw error
 
-      setSessions(data || [])
-      const wins = (data || []).filter((s) => s.game_result === 'win').length
-      const losses = (data || []).filter((s) => s.game_result === 'loss').length
+      const sessionsData = data || []
+      setSessions(sessionsData)
+      const wins = sessionsData.filter((s) => s.game_result === 'win').length
+      const losses = sessionsData.filter((s) => s.game_result === 'loss').length
       setStats({
-        totalParticipants: (data || []).length,
+        totalParticipants: sessionsData.length,
         wins,
         losses,
       })
@@ -243,49 +244,51 @@ function AdminPanel() {
         </div>
 
         {/* Sessions Table */}
-        <div className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">All Sessions</h2>
           {loading ? (
             <p className="text-xl text-gray-600">Loading...</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="py-3 px-4 text-lg font-semibold">Name</th>
-                  <th className="py-3 px-4 text-lg font-semibold">Email</th>
-                  <th className="py-3 px-4 text-lg font-semibold">Destination</th>
-                  <th className="py-3 px-4 text-lg font-semibold">Result</th>
-                  <th className="py-3 px-4 text-lg font-semibold">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessions.map((session, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 px-4">{session.name || 'N/A'}</td>
-                    <td className="py-3 px-4">{session.email || 'N/A'}</td>
-                    <td className="py-3 px-4">{session.destination || 'N/A'}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full font-semibold ${
-                          session.game_result === 'win'
-                            ? 'bg-upi-green text-white'
-                            : session.game_result === 'loss'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-300 text-gray-700'
-                        }`}
-                      >
-                        {session.game_result || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {session.created_at
-                        ? new Date(session.created_at).toLocaleString()
-                        : 'N/A'}
-                    </td>
+            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)] border border-gray-200 rounded-lg">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="py-3 px-4 text-lg font-semibold">Name</th>
+                    <th className="py-3 px-4 text-lg font-semibold">Email</th>
+                    <th className="py-3 px-4 text-lg font-semibold">Destination</th>
+                    <th className="py-3 px-4 text-lg font-semibold">Result</th>
+                    <th className="py-3 px-4 text-lg font-semibold">Timestamp</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sessions.map((session, index) => (
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">{session.name || 'N/A'}</td>
+                      <td className="py-3 px-4">{session.email || 'N/A'}</td>
+                      <td className="py-3 px-4">{session.destination || 'N/A'}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-3 py-1 rounded-full font-semibold ${
+                            session.game_result === 'win'
+                              ? 'bg-upi-green text-white'
+                              : session.game_result === 'loss'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-gray-300 text-gray-700'
+                          }`}
+                        >
+                          {session.game_result || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {session.created_at
+                          ? new Date(session.created_at).toLocaleString()
+                          : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

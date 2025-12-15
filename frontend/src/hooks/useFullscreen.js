@@ -73,14 +73,9 @@ export const useFullscreen = (autoFullscreen = true) => {
     document.addEventListener('mozfullscreenchange', checkFullscreen)
     document.addEventListener('MSFullscreenChange', checkFullscreen)
 
-    // Try to enter fullscreen on initial load (only once)
+    // Try to enter fullscreen only on user interaction (required by browsers)
     if (autoFullscreen && !hasAttemptedFullscreen.current) {
-      // Small delay to allow page to load
-      const timeoutId = setTimeout(() => {
-        enterFullscreen()
-      }, 500)
-      
-      // Also try on user interaction (click/touch) - required by some browsers
+      // Only try on user interaction (click/touch) - browsers block programmatic fullscreen
       const handleUserInteraction = () => {
         if (!hasAttemptedFullscreen.current && !isManuallyExited.current) {
           enterFullscreen()
@@ -93,7 +88,6 @@ export const useFullscreen = (autoFullscreen = true) => {
       document.addEventListener('touchstart', handleUserInteraction, { once: true })
       
       return () => {
-        clearTimeout(timeoutId)
         if (reEntryTimeoutRef.current) {
           clearTimeout(reEntryTimeoutRef.current)
         }

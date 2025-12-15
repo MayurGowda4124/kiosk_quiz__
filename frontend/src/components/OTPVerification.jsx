@@ -76,7 +76,6 @@ function OTPVerification({ email, userData, onVerified }) {
       if (!response.ok) {
         throw new Error(result.error || 'Failed to send OTP')
       }
-
     } catch (err) {
       const errorMessage = err.message || 'Failed to send OTP'
       setError(errorMessage)
