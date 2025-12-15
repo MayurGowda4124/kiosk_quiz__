@@ -1,7 +1,9 @@
 import crypto from 'crypto'
 import { supabase } from '../lib/supabase.js'
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD
+// Serverless functions use ADMIN_PASSWORD (without VITE_ prefix)
+// VITE_* variables are only available in the frontend build
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 
 // Constant-time string comparison to prevent timing attacks
 function timingSafeEqual(a, b) {

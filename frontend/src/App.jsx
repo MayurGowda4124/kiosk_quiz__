@@ -5,7 +5,6 @@ import UserDetailsForm from './components/UserDetailsForm'
 import OTPVerification from './components/OTPVerification'
 import QuizGame from './components/QuizGame'
 import AdminPanel from './components/AdminPanel'
-import FullscreenButton from './components/FullscreenButton'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useFullscreen } from './hooks/useFullscreen'
 
@@ -20,8 +19,6 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        {/* Fullscreen toggle button (hidden in production, visible for testing) */}
-        {import.meta.env.DEV && <FullscreenButton />}
         <Routes>
         <Route path="/admin" element={<AdminPanel />} />
         <Route
