@@ -88,7 +88,7 @@ const COUNTRIES_FLAGS = {
 
 function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
   const navigate = useNavigate()
-  const [timeLeft, setTimeLeft] = useState(10)
+  const [timeLeft, setTimeLeft] = useState(30)
   const [selectedAnswer, setSelectedAnswer] = useState(null)
   const [gameResult, setGameResult] = useState(null)
   const [isTimeUp, setIsTimeUp] = useState(false)
