@@ -40,6 +40,36 @@ app.get('/api/health', (req, res) => {
 // Custom OTP routes
 app.use('/api/auth', authRoutes)
 
+// Admin login route
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { password } = req.body
+    const adminPassword = process.env.VITE_ADMIN_PASSWORD || 'UPI_ADMIN_2024'
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' })
+    }
+
+    if (password !== adminPassword) {
+      return res.status(401).json({ error: 'Invalid password' })
+    }
+
+    // Generate simple session token
+    const tokenData = `${Date.now()}-${Math.random()}`
+    const sessionToken = Buffer.from(tokenData).toString('base64')
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+
+    res.json({
+      success: true,
+      token: sessionToken,
+      expiresAt,
+    })
+  } catch (error) {
+    console.error('Admin login error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // Get stats
 app.get('/api/stats', async (req, res) => {
   try {

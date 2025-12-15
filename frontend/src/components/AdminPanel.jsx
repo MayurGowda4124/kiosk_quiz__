@@ -5,6 +5,9 @@ import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000')
 const REQUEST_TIMEOUT = 10000
 
+// Debug: Log API URL on component load
+console.log('AdminPanel API_URL:', API_URL)
+
 function AdminPanel() {
   const [stats, setStats] = useState({
     totalParticipants: 0,
@@ -12,7 +15,7 @@ function AdminPanel() {
     losses: 0,
   })
   const [sessions, setSessions] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start as false so input is enabled
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginError, setLoginError] = useState('')
@@ -38,6 +41,10 @@ function AdminPanel() {
     setLoginError('')
     setLoading(true)
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:START',message:'Login attempt started',data:{API_URL,password_length:password.trim().length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     if (!password.trim()) {
       setLoginError('Password is required')
       setLoading(false)
@@ -45,8 +52,13 @@ function AdminPanel() {
     }
 
     try {
+      const loginUrl = `${API_URL}/api/admin/login`
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:BEFORE_FETCH',message:'About to make API call',data:{loginUrl,API_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
       const response = await fetchWithTimeout(
-        `${API_URL}/api/admin/login`,
+        loginUrl,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -55,14 +67,27 @@ function AdminPanel() {
         REQUEST_TIMEOUT
       )
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:AFTER_FETCH',message:'Received response',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
       let result
       try {
         result = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:AFTER_JSON_PARSE',message:'Parsed JSON response',data:{result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
       } catch (parseError) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:JSON_PARSE_ERROR',message:'Failed to parse JSON',data:{error:parseError.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         throw new Error('Invalid response from server')
       }
 
       if (!response.ok) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:RESPONSE_NOT_OK',message:'Response not OK',data:{status:response.status,error:result.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         setLoginError(result.error || 'Invalid password')
         setLoading(false)
         return
@@ -73,10 +98,19 @@ function AdminPanel() {
       sessionStorage.setItem('admin_expires_at', result.expiresAt.toString())
       setIsAuthenticated(true)
       setPassword('')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:SUCCESS',message:'Login successful',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:ERROR',message:'Login error caught',data:{error_message:error.message,error_name:error.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       setLoginError(error.message || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9e7198d8-bb7c-4d39-bef6-7fb89cee5e52',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminPanel.jsx:handleLogin:FINALLY',message:'Finally block executed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   }
 
