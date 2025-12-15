@@ -13,7 +13,9 @@
     "react-dom": "^18.2.0",
     "@supabase/supabase-js": "^2.39.0",
     "react-router-dom": "^6.21.0",
-    "canvas-confetti": "^1.9.2"
+    "canvas-confetti": "^1.9.2",
+    "csv-stringify": "^6.4.4",
+    "nodemailer": "^7.0.11"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

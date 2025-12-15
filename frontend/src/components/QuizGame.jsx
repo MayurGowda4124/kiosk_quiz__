@@ -245,12 +245,21 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
   useEffect(() => {
     if (gameResult !== null) return
 
-    const timer = setInterval(() => {
+    let timerId = null
+    let isTimerActive = true
+
+    timerId = setInterval(() => {
+      if (!isTimerActive || !isMountedRef.current) {
+        if (timerId) clearInterval(timerId)
+        return
+      }
+
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timer)
-          // Timeout = incorrect answer
-          if (selectedAnswer === null && isMountedRef.current) {
+          isTimerActive = false
+          if (timerId) clearInterval(timerId)
+          // Timeout = incorrect answer (only if no answer selected)
+          if (selectedAnswer === null && gameResult === null && isMountedRef.current) {
             setIsTimeUp(true)
             handleAnswer(null, false, true)
           }
@@ -261,7 +270,8 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
     }, 1000)
 
     return () => {
-      clearInterval(timer)
+      isTimerActive = false
+      if (timerId) clearInterval(timerId)
     }
   }, [gameResult, selectedAnswer, handleAnswer])
 
@@ -292,7 +302,7 @@ function QuizGame({ session, userData, selectedCountry, onGameEnd }) {
               <img 
                 src={getFlagUrl(selectedCountry.code)} 
                 alt={`${selectedCountry.name || selectedCountry.code} flag`}
-                className="w-full h-full object-contain border-2 border-gray-300 rounded-lg"
+                className="w-full h-full object-contain"
                 onError={() => setFlagImageError(true)}
               />
             )

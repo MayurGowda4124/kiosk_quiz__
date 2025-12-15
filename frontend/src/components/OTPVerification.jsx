@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+// Use relative URL in production (Vercel), otherwise use VITE_BACKEND_URL or localhost
+const API_URL = import.meta.env.PROD 
+  ? '' // Use relative URLs in production (same domain)
+  : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000')
+
+const REQUEST_TIMEOUT = 10000 // 10 seconds
 
 function OTPVerification({ email, userData, onVerified }) {
   const navigate = useNavigate()
@@ -44,17 +50,21 @@ function OTPVerification({ email, userData, onVerified }) {
       setError('')
       
       // Request OTP from backend (custom OTP system)
-      const response = await fetch(`${API_URL}/api/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          name: userData?.name,
-          destination: userData?.destination,
-          destinationCode: userData?.destinationCode,
-          receiveUpdates: userData?.receiveUpdates,
-        }),
-      })
+      const response = await fetchWithTimeout(
+        `${API_URL}/api/auth/send-otp`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            name: userData?.name,
+            destination: userData?.destination,
+            destinationCode: userData?.destinationCode,
+            receiveUpdates: userData?.receiveUpdates,
+          }),
+        },
+        REQUEST_TIMEOUT
+      )
 
       let result
       try {
@@ -90,14 +100,18 @@ function OTPVerification({ email, userData, onVerified }) {
       setError('')
 
       // Verify OTP with backend (custom OTP system)
-      const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          otp: otpCode,
-        }),
-      })
+      const response = await fetchWithTimeout(
+        `${API_URL}/api/auth/verify-otp`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            otp: otpCode,
+          }),
+        },
+        REQUEST_TIMEOUT
+      )
 
       const result = await response.json()
 

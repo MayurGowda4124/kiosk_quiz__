@@ -10,6 +10,11 @@
     "build": "cd frontend && npm run build",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "csv-stringify": "^6.4.4",
+    "nodemailer": "^7.0.11"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }

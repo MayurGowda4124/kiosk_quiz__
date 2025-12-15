@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
+
+const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000')
+const REQUEST_TIMEOUT = 10000
 
 function AdminPanel() {
   const [stats, setStats] = useState({
@@ -11,8 +15,17 @@ function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loginError, setLoginError] = useState('')
 
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'UPI_ADMIN_2024'
+  // Check for existing session token
+  useEffect(() => {
+    const token = sessionStorage.getItem('admin_token')
+    const expiresAt = sessionStorage.getItem('admin_expires_at')
+    
+    if (token && expiresAt && Date.now() < parseInt(expiresAt)) {
+      setIsAuthenticated(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -20,84 +33,149 @@ function AdminPanel() {
     }
   }, [isAuthenticated])
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
+    setLoginError('')
+    
+    if (!password.trim()) {
+      setLoginError('Password is required')
+      return
+    }
+
+    try {
+      const response = await fetchWithTimeout(
+        `${API_URL}/api/admin/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: password.trim() }),
+        },
+        REQUEST_TIMEOUT
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setLoginError(result.error || 'Invalid password')
+        return
+      }
+
+      // Store session token
+      sessionStorage.setItem('admin_token', result.token)
+      sessionStorage.setItem('admin_expires_at', result.expiresAt.toString())
       setIsAuthenticated(true)
-    } else {
-      alert('Invalid password')
+      setPassword('')
+    } catch (error) {
+      setLoginError(error.message || 'Login failed. Please try again.')
     }
   }
 
   const loadData = async () => {
     try {
       setLoading(true)
+      // Add pagination - limit to 1000 records for performance
       const { data, error } = await supabase
         .from('game_sessions')
         .select('*')
         .order('created_at', { ascending: false })
+        .limit(1000)
 
       if (error) throw error
 
       setSessions(data || [])
-      const wins = data.filter((s) => s.game_result === 'win').length
-      const losses = data.filter((s) => s.game_result === 'loss').length
+      const wins = (data || []).filter((s) => s.game_result === 'win').length
+      const losses = (data || []).filter((s) => s.game_result === 'loss').length
       setStats({
-        totalParticipants: data.length,
+        totalParticipants: (data || []).length,
         wins,
         losses,
       })
     } catch (error) {
       console.error('Error loading data:', error)
-      alert('Error loading data: ' + error.message)
+      alert('Error loading data: ' + (error.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
   }
 
+  // Escape CSV special characters to prevent injection
+  const escapeCSV = (value) => {
+    if (value === null || value === undefined) return ''
+    const str = String(value)
+    // Escape quotes by doubling them
+    const escaped = str.replace(/"/g, '""')
+    // If contains comma, newline, or quote, wrap in quotes
+    if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('"')) {
+      return `"${escaped}"`
+    }
+    // Escape leading =, +, -, @, TAB to prevent formula injection
+    if (/^[=+\-@\t]/.test(escaped)) {
+      return `'${escaped}`
+    }
+    return escaped
+  }
+
   const exportCSV = () => {
     const headers = ['Name', 'Email', 'Destination', 'OTP Verified', 'Game Result', 'Timestamp']
     const rows = sessions.map((session) => [
-      session.name || '',
-      session.email || '',
-      session.destination || '',
-      session.otp_verified ? 'Yes' : 'No',
-      session.game_result || 'N/A',
-      session.created_at || '',
+      escapeCSV(session.name),
+      escapeCSV(session.email),
+      escapeCSV(session.destination),
+      escapeCSV(session.otp_verified ? 'Yes' : 'No'),
+      escapeCSV(session.game_result || 'N/A'),
+      escapeCSV(session.created_at),
     ])
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      headers.map(escapeCSV).join(','),
+      ...rows.map((row) => row.join(',')),
     ].join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `upi-quiz-export-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     window.URL.revokeObjectURL(url)
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_token')
+    sessionStorage.removeItem('admin_expires_at')
+    setIsAuthenticated(false)
+    setSessions([])
+    setStats({ totalParticipants: 0, wins: 0, losses: 0 })
   }
 
   if (!isAuthenticated) {
     return (
       <div className="w-full h-screen bg-gray-100 flex items-center justify-center">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4">
           <h2 className="text-3xl font-bold text-upi-blue mb-6">Admin Login</h2>
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setLoginError('')
+            }}
             placeholder="Enter admin password"
             className="w-full px-4 py-3 text-xl border-2 border-gray-300 rounded-lg mb-4"
             autoFocus
+            disabled={loading}
           />
+          {loginError && (
+            <p className="text-red-500 mb-4 text-lg">{loginError}</p>
+          )}
           <button
             type="submit"
-            className="w-full py-3 bg-upi-blue text-white text-xl font-bold rounded-lg hover:bg-blue-700"
+            disabled={loading}
+            className="w-full py-3 bg-upi-blue text-white text-xl font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>
@@ -109,17 +187,27 @@ function AdminPanel() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h1 className="text-4xl font-bold text-upi-blue mb-4">Admin Panel</h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-4xl font-bold text-upi-blue">Admin Panel</h1>
+            <button
+              onClick={handleLogout}
+              className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </div>
           <div className="flex gap-4">
             <button
               onClick={loadData}
-              className="px-6 py-3 bg-upi-blue text-white rounded-lg font-semibold hover:bg-blue-700"
+              disabled={loading}
+              className="px-6 py-3 bg-upi-blue text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
             >
               Refresh Data
             </button>
             <button
               onClick={exportCSV}
-              className="px-6 py-3 bg-upi-green text-white rounded-lg font-semibold hover:bg-green-600"
+              disabled={sessions.length === 0}
+              className="px-6 py-3 bg-upi-green text-white rounded-lg font-semibold hover:bg-green-600 disabled:opacity-50"
             >
               Export CSV
             </button>
